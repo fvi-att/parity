@@ -10,7 +10,6 @@ GIT_PARITY="https://${GITHUB_JS_PRECOMPILED}:@github.com/ethcore/parity.git"
 BASEDIR=`dirname $0`
 GITLOG=./.git/gitcommand.log
 
-# setup the git user defaults for the current repo
 function setup_git_user {
   git config push.default simple
   git config merge.ours.driver true
@@ -21,7 +20,6 @@ function setup_git_user {
 echo "*** Setting up GitHub config for parity"
 setup_git_user
 git remote set-url origin $GIT_PARITY
-git fetch
 
 echo "*** Finding JS source changes"
 JS_CHANGED=$(git --no-pager diff --name-only $BRANCH $(git merge-base $BRANCH origin/master) | grep \.js | wc -l)
@@ -34,12 +32,8 @@ else
   exit 0
 fi
 
-# change into build directory
-pushd $BASEDIR
-cd ../.dist
-
-# add local files and send it up
 echo "*** Setting up GitHub config for js-precompiled"
+cd js/.dist
 rm -rf ./.git
 git init
 setup_git_user
@@ -58,10 +52,8 @@ git merge origin/$BRANCH -X ours --commit -m "$UTCDATE [release]"
 git push origin HEAD:refs/heads/$BRANCH 2>$GITLOG
 PRECOMPILED_HASH=`git rev-parse HEAD`
 
-# move to root
+echo "*** Resetting parity base"
 cd ../..
-
-echo "*** Resetting base branch"
 git reset --hard origin/$BRANCH 2>$GITLOG
 
 if [ "$BRANCH" == "master" ]; then
@@ -71,7 +63,6 @@ if [ "$BRANCH" == "master" ]; then
   npm version patch
 
   echo "*** Building packages for npmjs"
-  # echo -e "$NPM_USERNAME\n$NPM_PASSWORD\n$NPM_EMAIL" | npm login
   echo "$NPM_TOKEN" >> ~/.npmrc
   npm run ci:build:npm
 
@@ -90,9 +81,5 @@ git add .
 git commit -m "[ci skip] js-precompiled $UTCDATE"
 git push origin HEAD:refs/heads/$BRANCH 2>$GITLOG
 
-# back to root
 echo "*** Release completed"
-popd
-
-# exit with exit code
 exit 0
