@@ -414,6 +414,7 @@ js-tests:
 js-release:
   stage: js-build
   only:
+    - jg-release-skip
     - master
     - beta
     - stable

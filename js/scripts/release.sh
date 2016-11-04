@@ -7,6 +7,15 @@ PACKAGES=( "parity.js" )
 BRANCH=$CI_BUILD_REF_NAME
 GIT_JS_PRECOMPILED="https://${GITHUB_JS_PRECOMPILED}:@github.com/ethcore/js-precompiled.git"
 GIT_PARITY="https://${GITHUB_JS_PRECOMPILED}:@github.com/ethcore/parity.git"
+JS_CHANGED=$(git --no-pager diff --name-only $BRANCH $(git merge-base $BRANCH master) | grep \.js | wc -l)
+
+if [ "$JS_CHANGED" == "0" ]; then
+  echo "*** No JS changes detected, skipping execution"
+  exit 0
+else
+  echo "*** JS changes detected, continuing execution"
+  exit 0
+fi
 
 # setup the git user defaults for the current repo
 function setup_git_user {
