@@ -7,15 +7,8 @@ PACKAGES=( "parity.js" )
 BRANCH=$CI_BUILD_REF_NAME
 GIT_JS_PRECOMPILED="https://${GITHUB_JS_PRECOMPILED}:@github.com/ethcore/js-precompiled.git"
 GIT_PARITY="https://${GITHUB_JS_PRECOMPILED}:@github.com/ethcore/parity.git"
-JS_CHANGED=$(git --no-pager diff --name-only $BRANCH $(git merge-base $BRANCH master) | grep \.js | wc -l)
-
-if [ "$JS_CHANGED" == "0" ]; then
-  echo "*** No JS changes detected, skipping execution"
-  exit 0
-else
-  echo "*** JS changes detected, continuing execution"
-  exit 0
-fi
+BASEDIR=`dirname $0`
+GITLOG=./.git/gitcommand.log
 
 # setup the git user defaults for the current repo
 function setup_git_user {
@@ -25,9 +18,23 @@ function setup_git_user {
   git config user.name "GitLab Build Bot"
 }
 
-# change into the build directory
-BASEDIR=`dirname $0`
-GITLOG=./.git/gitcommand.log
+echo "*** Setting up GitHub config for parity"
+setup_git_user
+git remote set-url origin $GIT_PARITY
+git fetch
+
+echo "*** Finding JS source changes"
+JS_CHANGED=$(git --no-pager diff --name-only $BRANCH $(git merge-base $BRANCH origin/master) | grep \.js | wc -l)
+
+if [ "$JS_CHANGED" == "0" ]; then
+  echo "*** No JS changes detected, skipping execution"
+  exit 0
+else
+  echo "*** JS changes detected, continuing execution"
+  exit 0
+fi
+
+# change into build directory
 pushd $BASEDIR
 cd ../.dist
 
@@ -54,9 +61,7 @@ PRECOMPILED_HASH=`git rev-parse HEAD`
 # move to root
 cd ../..
 
-echo "*** Setting up GitHub config for parity"
-setup_git_user
-git remote set-url origin $GIT_PARITY
+echo "*** Resetting base branch"
 git reset --hard origin/$BRANCH 2>$GITLOG
 
 if [ "$BRANCH" == "master" ]; then
