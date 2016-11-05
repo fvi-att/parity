@@ -20,9 +20,10 @@ function setup_git_user {
 echo "*** Setting up GitHub config for parity"
 setup_git_user
 git remote set-url origin $GIT_PARITY
+git fetch
 
 echo "*** Finding JS source changes"
-JS_CHANGED=$(git --no-pager diff --name-only $BRANCH $(git merge-base $BRANCH origin/master) | grep \.js | wc -l)
+JS_CHANGED=$(git --no-pager diff --name-only HEAD@{1} HEAD | grep \.js | wc -l)
 
 if [ "$JS_CHANGED" == "0" ]; then
   echo "*** No JS changes detected, skipping execution"
@@ -50,7 +51,7 @@ git commit -m "$UTCDATE"
 echo "*** Merging remote"
 git merge origin/$BRANCH -X ours --commit -m "$UTCDATE [release]"
 git push origin HEAD:refs/heads/$BRANCH 2>$GITLOG
-PRECOMPILED_HASH=`git rev-parse HEAD`
+PRECOMPILED_HASH=$(git rev-parse HEAD)
 
 echo "*** Resetting parity base"
 cd ../..
